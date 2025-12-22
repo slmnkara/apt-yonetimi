@@ -115,14 +115,14 @@
         </nav>
 
         <div class="container px-2 text-gray-300 grid grid-cols-1 gap-3 lg:grid-cols-2 mt-2 lg:mx-auto lg:px-0">
-            <div class="flex flex-col justify-between gap-2">
+            <div class="flex flex-col justify-start gap-2">
                 <div
                     class="bg-gray-900 rounded p-2 border border-solid border-gray-700 transition duration-500 ease-in-out hover:translate-y-1">
                     <p class="text-sm text-gray-500">Kasa</p>
                     <p class="text-4xl" id="kasaBakiye">0 ₺</p>
                     <div id="btn-update-balance" onclick="openModal('modalIncome')"
                         class="bg-gray-700 text-white text-sm text-center py-1 mt-2 rounded hover:bg-gray-800">
-                        Bakiyeyi Güncelle
+                        Hesap Hareketi Ekle
                     </div>
                 </div>
 
@@ -225,7 +225,7 @@
                     <table class="w-full text-left border-collapse">
                         <thead>
                             <tr class="text-sm text-gray-300">
-                                <th class="p-3"><input type="checkbox" id="selectAll"></th>
+                                <th class="p-3"><p id="selectAll"></p></th>
                                 <th class="p-3">Daire</th>
                                 <th class="p-3">Sakin</th>
                                 <th class="p-3">Bakiye Durumu</th>
@@ -241,20 +241,20 @@
         </div>
     </section>
 
-    <section id="residentView" class="hidden-view min-h-screen bg-slate-50 p-4">
-        <div class="max-w-2xl mx-auto bg-white rounded-xl shadow-xl overflow-hidden mt-10">
-            <div class="bg-blue-600 p-6 text-white">
+    <section id="residentView" class="hidden-view min-h-screen bg-gray-900 p-4">
+        <div class="max-w-2xl mx-auto bg-gray-900/95 rounded-xl shadow-xl overflow-hidden mt-10">
+            <div class="bg-gray-800 p-6 text-gray-300">
                 <h2 class="text-2xl font-bold" id="resSakinAdi">Sakin Adı</h2>
                 <p class="opacity-90" id="resDaireNo">Daire: --</p>
             </div>
 
             <div class="p-6">
-                <h3 class="text-lg font-bold text-red-600 mb-3 border-b pb-1">Ödenmemiş Borçlar</h3>
+                <h3 class="text-lg font-bold text-red-500 mb-3 border-b pb-1">Ödenmemiş Borçlar</h3>
                 <div id="resUnpaidList" class="space-y-3 mb-8">
                     <p class="text-gray-500 italic">Ödenmemiş borcunuz bulunmamaktadır.</p>
                 </div>
 
-                <h3 class="text-lg font-bold text-green-600 mb-3 border-b pb-1">Ödeme Geçmişi</h3>
+                <h3 class="text-lg font-bold text-green-400 mb-3 border-b pb-1">Ödeme Geçmişi</h3>
                 <div class="overflow-x-auto">
                     <table class="w-full text-sm">
                         <thead class="bg-gray-100">
@@ -273,18 +273,34 @@
     </section>
 
     <div id="modalIncome"
-        class="hidden-view fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center p-4 z-50">
-        <div class="bg-white p-6 rounded shadow-lg w-full max-w-sm">
-            <h3 class="text-lg font-bold mb-4">Kasa Hareketi Ekle</h3>
-            <select id="kasaType" class="w-full p-2 border rounded mb-2">
+        class="hidden-view fixed inset-0 bg-gray-900/80 text-gray-300 flex justify-center items-center p-4 z-50">
+        <div class="bg-gray-900 p-6 rounded shadow-lg w-full max-w-sm border border-solid border-gray-700">
+            <h4 class="font-semibold text-lg text-gray-500 mb-2">Hesap Hareketi Ekle</h4>
+            <select id="kasaType" class="w-full p-2 border rounded mb-2 border border-solid border-gray-700">
                 <option value="gelir">Para Girişi (Gelir)</option>
                 <option value="gider">Para Çıkışı (Gider)</option>
             </select>
-            <input type="text" id="kasaDesc" placeholder="Açıklama" class="w-full p-2 border rounded mb-2">
-            <input type="number" id="kasaAmount" placeholder="Tutar" class="w-full p-2 border rounded mb-4">
+
+            <label for="kasaDesc">
+                <small>Açıklama</small>
+            </label>
+            <input type="text" id="kasaDesc" placeholder="Açıklama"
+                class="w-full p-2 border rounded mb-2 border border-solid border-gray-700">
+            <label for="kasaAmount">
+                <small>Miktar</small>
+            </label>
+            <input type="number" id="kasaAmount" placeholder="Tutar (₺)"
+                class="w-full p-2 border rounded mb-4 border border-solid border-gray-700">
+
             <div class="flex justify-end gap-2">
-                <button onclick="closeModal('modalIncome')" class="text-gray-500 px-3 py-1">İptal</button>
-                <button onclick="saveKasaIslem()" class="bg-blue-600 text-white px-3 py-1 rounded">Kaydet</button>
+                <div onclick="closeModal('modalIncome')"
+                    class="bg-gray-700 text-white text-sm text-center px-3 py-1 rounded hover:bg-gray-800 flex items-center">
+                    İptal
+                </div>
+                <div onclick="saveKasaIslem()"
+                    class="bg-gray-700 text-white text-sm text-center px-3 py-1 rounded hover:bg-gray-800 flex items-center outline-2 outline-offset-2 outline-indigo-500">
+                    Kaydet
+                </div>
             </div>
         </div>
     </div>

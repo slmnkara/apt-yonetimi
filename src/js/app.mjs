@@ -131,7 +131,7 @@ function renderMeskenTable() {
         const fullUrl = `${window.location.origin}${window.location.pathname}?id=${m.mesken_url}`;
 
         tbody.innerHTML += `
-                    <tr class="border-b hover:bg-gray-800">
+                    <tr class="hover:bg-gray-800">
                         <td class="p-3"><input type="checkbox" class="mesken-check" value="${m.dbId}"></td>
                         <td class="p-3 font-bold text-center rounded w-12">${m.kod}</td>
                         <td class="p-3">${m.sakin_adi}</td>
