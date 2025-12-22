@@ -1,0 +1,36 @@
+.hidden-view {
+    display: none !important;
+}
+
+.loading {
+    position: fixed;
+    inset: 0;
+    background: white;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 50;
+}
+
+@media print {
+    body * {
+        visibility: hidden;
+        /* Her şeyi gizle */
+    }
+
+    #printArea,
+    #printArea * {
+        visibility: visible;
+        /* Sadece rapor alanını göster */
+    }
+
+    #printArea {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+        display: block !important;
+        font-family: 'Times New Roman', Times, serif;
+        /* Yazıcı dostu font */
+    }
+}

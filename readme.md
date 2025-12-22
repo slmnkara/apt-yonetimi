@@ -1,0 +1,1 @@
+HTML içerisindeki event listenerlar js koduna taşınacak.
