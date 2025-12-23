@@ -44,23 +44,40 @@ export function loadAdminDashboard() {
     });
 }
 
+// ... Mevcut importlar ve kodlar ...
+
 function renderKasaList(hareketler) {
     const list = document.getElementById('kasaList');
-    if(!list) return;
-    
+    if (!list) return;
+
     list.innerHTML = '';
-    // Sondan başa (yeniler üstte)
-    hareketler.slice().reverse().slice(0,4).forEach(h => {
-        const color = h.tur === 'gelir' ? 'text-green-600' : 'text-red-600';
+    // Sondan başa (yeniler üstte), son 50 hareketi gösterelim (scroll olduğu için sayıyı artırabiliriz)
+    // slice(0,4) yerine daha fazla göstermek kullanıcı için daha iyidir, css'de zaten overflow-y-auto var.
+    hareketler.slice().reverse().forEach(h => {
+        const color = h.tur === 'gelir' ? 'text-green-500' : 'text-red-500';
         const icon = h.tur === 'gelir' ? '+' : '-';
+        
+        // Hareketi silme butonu eklendi (window.deleteKasaHareket)
         list.innerHTML += `
-            <li class="flex justify-between border-b pb-1 last:border-0 border-gray-700">
-                <span class="text-gray-300">${h.aciklama}</span>
-                <span class="${color} font-bold">${icon}${h.tutar} ₺</span>
+            <li class="flex justify-between items-center border-b border-gray-700 pb-2 last:border-0 hover:bg-white/5 p-1 rounded transition">
+                <div class="flex flex-col overflow-hidden">
+                    <span class="text-gray-300 text-sm truncate" title="${h.aciklama}">${h.aciklama}</span>
+                    <span class="text-xs text-gray-500">${h.tarih}</span>
+                </div>
+                <div class="flex items-center gap-3 shrink-0">
+                    <span class="${color} font-bold text-sm">${icon}${h.tutar} ₺</span>
+                    <button onclick="window.deleteKasaHareket('${h.id}')" 
+                        class="text-gray-600 hover:text-red-500 transition-colors p-1" 
+                        title="İşlemi Geri Al / Sil">
+                        <i class="fas fa-trash-alt"></i>
+                    </button>
+                </div>
             </li>
         `;
     });
 }
+
+// ... Diğer kodlar ...
 
 // Mesken Ekle Listener
 const addMeskenForm = document.getElementById('addMeskenForm');
@@ -109,8 +126,13 @@ function renderMeskenTable() {
                 <td class="p-3">
                     <button onclick="navigator.clipboard.writeText('${fullUrl}'); alert('Link Kopyalandı!')" class="text-indigo-400 text-sm hover:text-indigo-300 transition"><i class="fas fa-link"></i> Link</button>
                 </td>
-                <td class="p-3">
-                    <button onclick="window.deleteMesken('${m.dbId}')" class="text-gray-500 hover:text-red-500 transition"><i class="fas fa-trash"></i></button>
+                <td class="p-3 flex gap-2">
+                    <button onclick="window.openEditMesken('${m.dbId}')" class="text-gray-500 hover:text-blue-500 transition" title="Düzenle">
+                        <i class="fas fa-pen"></i>
+                    </button>
+                    <button onclick="window.deleteMesken('${m.dbId}')" class="text-gray-500 hover:text-red-500 transition" title="Sil">
+                        <i class="fas fa-trash"></i>
+                    </button>
                 </td>
             </tr>
         `;

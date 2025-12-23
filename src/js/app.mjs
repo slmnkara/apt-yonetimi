@@ -6,6 +6,7 @@ import { globalKasaHareketler, meskenListesi } from "./app-db.mjs";
 window.openModal = (id) => document.getElementById(id).classList.remove('hidden-view');
 window.closeModal = (id) => document.getElementById(id).classList.add('hidden-view');
 
+// --- MANUEL GELİR / GİDER EKLEME ---
 window.saveKasaIslem = async () => {
     const type = document.getElementById('kasaType').value;
     const desc = document.getElementById('kasaDesc').value;
@@ -43,6 +44,7 @@ window.saveKasaIslem = async () => {
     }
 };
 
+// --- RAPORLAMA ---
 window.printKasaReport = () => {
     const startVal = document.getElementById('reportStartDate').value;
     const endVal = document.getElementById('reportEndDate').value;
@@ -124,8 +126,7 @@ window.printKasaReport = () => {
     window.print();
 };
 
-// Ödeme Al (Borcu sil, ödemelere ekle, kasaya ekle)
-// --- DOSYA: src/js/app.mjs ---
+// --- BORÇ ÖDEME (GÜNCELLENDİ: METADATA EKLENDİ) ---
 window.payDebt = async (dbId) => {
     const m = meskenListesi.find(x => x.dbId === dbId);
     
@@ -135,18 +136,14 @@ window.payDebt = async (dbId) => {
     }
 
     const toplamTutar = m.borclar.reduce((acc, c) => acc + parseFloat(c.tutar), 0);
-
-    // --- YENİ EKLENEN KISIM BAŞLANGIÇ ---
-    // Borçların açıklamalarını toplayıp virgülle birleştiriyoruz
-    // Örnek Çıktı: "Ocak Aidat, Demirbaş, Yakıt"
     const aciklamalar = m.borclar.map(b => b.aciklama).join(', ');
-    // --- YENİ EKLENEN KISIM BİTİŞ ---
 
     if (!confirm(`${m.sakin_adi} için ${toplamTutar} TL tahsilat yapılacak. Onaylıyor musunuz?`)) return;
 
     const ref = doc(db, "meskenler", dbId);
     const kasaRef = doc(db, "kasa", "ana_kasa");
 
+    // Borçları ödemeler listesine taşırken tarih ekliyoruz
     const yeniOdemeler = m.borclar.map(b => ({
         ...b,
         odeme_tarihi: new Date().toLocaleDateString('tr-TR')
@@ -168,11 +165,16 @@ window.payDebt = async (dbId) => {
             hareketler: arrayUnion({
                 id: Date.now(),
                 tur: 'gelir',
-                // ESKİSİ: aciklama: `${m.kod} nolu daire aidat ödemesi`,
-                // YENİSİ: Dinamik açıklama
-                aciklama: `Daire ${m.kod}: ${aciklamalar} Tahsilatı`, 
+                aciklama: `${m.kod}: ${aciklamalar} Tahsilatı`, 
                 tutar: toplamTutar,
-                tarih: new Date().toLocaleDateString('tr-TR')
+                tarih: new Date().toLocaleDateString('tr-TR'),
+                // --- İZ BIRAKMA (METADATA) ---
+                meta: {
+                    tip: 'aidat_tahsilati',
+                    sakinId: dbId,
+                    silinenBorclar: m.borclar,     // Geri yükleme için
+                    eklenenOdemeler: yeniOdemeler  // Silme için
+                }
             })
         });
         
@@ -183,6 +185,7 @@ window.payDebt = async (dbId) => {
     }
 };
 
+// --- DAİRE SİLME ---
 window.deleteMesken = async (dbId) => {
     const { deleteDoc } = await import("https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js");
     
@@ -193,5 +196,189 @@ window.deleteMesken = async (dbId) => {
         } catch (err) {
             alert("Silme hatası: " + err.message);
         }
+    }
+};
+
+// --- HAREKETİ GERİ AL / SİL (YENİ ÖZELLİK) ---
+window.deleteKasaHareket = async (hareketId) => {
+    const id = String(hareketId);
+
+    if (!confirm("Bu işlemi geri almak (silmek) istediğinize emin misiniz?")) {
+        return;
+    }
+
+    const kasaRef = doc(db, "kasa", "ana_kasa");
+
+    try {
+        // 1. Kasa verisini çek
+        const docSnap = await getDoc(kasaRef);
+        if (!docSnap.exists()) return;
+
+        const data = docSnap.data();
+        const hareketler = data.hareketler || [];
+        const targetItem = hareketler.find(h => String(h.id) === id);
+
+        if (!targetItem) {
+            alert("İşlem bulunamadı veya daha önce silinmiş.");
+            return;
+        }
+
+        // --- BORÇLARI GERİ YÜKLEME MANTIĞI ---
+        if (targetItem.meta && targetItem.meta.tip === 'aidat_tahsilati') {
+            const sakinId = targetItem.meta.sakinId;
+            const eskiBorclar = targetItem.meta.silinenBorclar;
+            const eklenenOdemeler = targetItem.meta.eklenenOdemeler;
+
+            const sakinRef = doc(db, "meskenler", sakinId);
+            const sakinSnap = await getDoc(sakinRef);
+            
+            if (sakinSnap.exists()) {
+                const sakinData = sakinSnap.data();
+                
+                // A) Borçları geri yükle
+                const guncelBorclar = sakinData.borclar || [];
+                const restoreEdilmisBorclar = [...guncelBorclar, ...eskiBorclar];
+
+                // B) Ödeme geçmişinden sil
+                const guncelOdemeler = sakinData.odemeler || [];
+                const silinecekOdemeIdleri = eklenenOdemeler.map(x => x.id);
+                
+                const temizlenmisOdemeler = guncelOdemeler.filter(odeme => 
+                    !silinecekOdemeIdleri.includes(odeme.id)
+                );
+
+                await updateDoc(sakinRef, {
+                    borclar: restoreEdilmisBorclar,
+                    odemeler: temizlenmisOdemeler
+                });
+                console.log("Borçlar ve ödeme geçmişi geri alındı.");
+            } else {
+                alert("Uyarı: İlgili daire veritabanında bulunamadı, sadece kasa düzeltilecek.");
+            }
+        }
+
+        // 2. Kasa Bakiyesini Düzelt
+        let yeniBakiye = parseFloat(data.toplam_bakiye);
+        const tutar = parseFloat(targetItem.tutar);
+
+        if (targetItem.tur === 'gelir') {
+            yeniBakiye -= tutar; // Gelir siliniyorsa düş
+        } else {
+            yeniBakiye += tutar; // Gider siliniyorsa ekle
+        }
+
+        // 3. Listeden Çıkar ve Kaydet
+        const yeniHareketler = hareketler.filter(h => String(h.id) !== id);
+
+        await updateDoc(kasaRef, {
+            toplam_bakiye: yeniBakiye,
+            hareketler: yeniHareketler
+        });
+
+        alert("İşlem başarıyla geri alındı.");
+
+    } catch (error) {
+        console.error("Silme hatası:", error);
+        alert("Bir hata oluştu: " + error.message);
+    }
+};
+
+// DOSYA: src/js/app.mjs (Dosyanın en altına veya uygun bir yere ekleyin)
+
+// --- SAKİN DÜZENLEME & BORÇ SİLME ---
+
+// 1. Modalı Aç ve Verileri Doldur
+window.openEditMesken = (dbId) => {
+    const m = meskenListesi.find(x => x.dbId === dbId);
+    if (!m) return;
+
+    // Formu doldur
+    document.getElementById('editMeskenId').value = dbId;
+    document.getElementById('editSakinAdi').value = m.sakin_adi;
+    document.getElementById('editDaireNo').value = m.kod;
+
+    // Borç listesini doldur
+    renderEditBorcList(m);
+
+    window.openModal('modalEditMesken');
+};
+
+// Yardımcı Fonksiyon: Modal içindeki borç listesini çiz
+function renderEditBorcList(meskenData) {
+    const listDiv = document.getElementById('editBorcList');
+    listDiv.innerHTML = '';
+
+    if (!meskenData.borclar || meskenData.borclar.length === 0) {
+        listDiv.innerHTML = '<p class="text-gray-500 text-sm italic">Kayıtlı borç yok.</p>';
+        return;
+    }
+
+    meskenData.borclar.forEach(borc => {
+        listDiv.innerHTML += `
+            <div class="flex justify-between items-center bg-gray-800 p-2 rounded border border-gray-700 text-sm">
+                <div>
+                    <div class="text-gray-300">${borc.aciklama}</div>
+                    <div class="text-xs text-gray-500">${borc.tarih} - ${borc.tutar} ₺</div>
+                </div>
+                <button onclick="window.deleteSpecificDebt('${meskenData.dbId}', '${borc.id}')" 
+                        class="text-red-400 hover:text-red-300 p-1" title="Borcu Sil">
+                    <i class="fas fa-times-circle"></i>
+                </button>
+            </div>
+        `;
+    });
+}
+
+// 2. Sakin Bilgilerini Güncelle (İsim / Daire No)
+window.saveMeskenEdit = async () => {
+    const dbId = document.getElementById('editMeskenId').value;
+    const yeniAd = document.getElementById('editSakinAdi').value;
+    const yeniKod = document.getElementById('editDaireNo').value;
+
+    if (!yeniAd || !yeniKod) return alert("Bilgiler boş olamaz.");
+
+    try {
+        const ref = doc(db, "meskenler", dbId);
+        await updateDoc(ref, {
+            sakin_adi: yeniAd,
+            kod: yeniKod
+        });
+        alert("Bilgiler güncellendi.");
+        window.closeModal('modalEditMesken');
+    } catch (err) {
+        console.error(err);
+        alert("Güncelleme hatası: " + err.message);
+    }
+};
+
+// 3. Tekil Borç Silme
+window.deleteSpecificDebt = async (meskenId, borcId) => {
+    if (!confirm("Bu borç kaydı silinecek. Emin misiniz?")) return;
+
+    try {
+        const ref = doc(db, "meskenler", meskenId);
+        
+        // Mevcut veriyi al (meskenListesi global değişkeninden hızlıca alıyoruz, 
+        // ama güncel olduğundan emin olmak için snapshot zaten çalışıyor)
+        const m = meskenListesi.find(x => x.dbId === meskenId);
+        if(!m) return;
+
+        // Silinecek borcu filtrele
+        const yeniBorclar = m.borclar.filter(b => b.id !== borcId);
+
+        // Firestore'a yaz
+        await updateDoc(ref, {
+            borclar: yeniBorclar
+        });
+
+        // Modaldaki listeyi anlık güncelle (kullanıcı kapattıp açmak zorunda kalmasın)
+        // Not: updateDoc çalıştığında onSnapshot tetiklenir ve meskenListesi güncellenir.
+        // Ancak biz UI'ı hemen güncellemek için manuel bir obje oluşturup listeyi yeniden çizdirebiliriz.
+        const updatedMesken = { ...m, borclar: yeniBorclar };
+        renderEditBorcList(updatedMesken);
+
+    } catch (err) {
+        console.error(err);
+        alert("Borç silinemedi: " + err.message);
     }
 };

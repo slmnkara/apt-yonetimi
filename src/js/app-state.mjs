@@ -8,7 +8,8 @@ const views = {
     resident: document.getElementById('residentView')
 };
 
-function showView(view) {
+// showView fonksiyonuna ikinci bir parametre (data) ekledik
+function showView(view, data = null) {
     Object.values(views).forEach(el => el.classList.add('hidden-view'));
     views[view].classList.remove('hidden-view');
 
@@ -16,7 +17,13 @@ function showView(view) {
         loadAdminDashboard();
     }
     else if (view === 'resident') {
-        loadResidentData();
+        // BURASI DEĞİŞTİ: URL'den gelen ID'yi (data) fonksiyona iletiyoruz
+        if (data) {
+            loadResidentData(data);
+        } else {
+            alert("Kimlik bilgisi bulunamadı!");
+            showView('login');
+        }
     }
 }
 
@@ -29,8 +36,10 @@ authBus.addEventListener('auth-change', (e) => {
     } else {
         const params = new URLSearchParams(window.location.search);
         const residentId = params.get('id');
+        
         if (residentId) {
-            showView('resident');
+            // BURASI DEĞİŞTİ: residentId'yi ikinci parametre olarak gönderiyoruz
+            showView('resident', residentId);
         }
         else {
             showView('login');

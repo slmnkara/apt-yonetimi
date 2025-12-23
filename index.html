@@ -289,6 +289,40 @@
             </div>
         </div>
     </div>
+
+    <div id="modalEditMesken"
+        class="hidden-view fixed inset-0 bg-gray-900/80 text-gray-300 flex justify-center items-center p-4 z-50">
+        <div class="bg-gray-900 p-6 rounded shadow-lg w-full max-w-lg border border-solid border-gray-700 max-h-[90vh] overflow-y-auto">
+            <h4 class="font-semibold text-lg text-gray-500 mb-4 border-b border-gray-700 pb-2">Sakin Düzenle</h4>
+            
+            <input type="hidden" id="editMeskenId">
+
+            <div class="grid grid-cols-2 gap-4 mb-4">
+                <div>
+                    <label class="text-xs text-gray-500">Sakin Adı</label>
+                    <input type="text" id="editSakinAdi" class="w-full p-2 border rounded bg-gray-800 border-gray-700 text-white">
+                </div>
+                <div>
+                    <label class="text-xs text-gray-500">Daire No</label>
+                    <input type="text" id="editDaireNo" class="w-full p-2 border rounded bg-gray-800 border-gray-700 text-white">
+                </div>
+            </div>
+
+            <button onclick="saveMeskenEdit()" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white p-2 rounded mb-6">
+                Bilgileri Güncelle
+            </button>
+
+            <h4 class="font-semibold text-sm text-red-400 mb-2 border-b border-gray-700 pb-1">Tanımlı Borçlar</h4>
+            <div id="editBorcList" class="space-y-2 mb-4 max-h-48 overflow-y-auto">
+                </div>
+
+            <div class="flex justify-end mt-4">
+                <button onclick="closeModal('modalEditMesken')" class="bg-gray-700 text-white px-4 py-2 rounded hover:bg-gray-600">
+                    Kapat
+                </button>
+            </div>
+        </div>
+    </div>
 </body>
 
 </html>
