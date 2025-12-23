@@ -5,7 +5,6 @@
 .loading {
     position: fixed;
     inset: 0;
-    background: white;
     display: flex;
     justify-content: center;
     align-items: center;

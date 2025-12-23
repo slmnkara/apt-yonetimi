@@ -4,18 +4,22 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Apartman Yönetim Sistemi</title>
+    <title>Apartman Yönetim Sistemleri</title>
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
     <link rel="stylesheet" href="./src/css/style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <script src="https://cdn.jsdelivr.net/npm/@tailwindplus/elements@1" type="module"></script> <!-- For Navbar -->
-    <script type="module" src="./src/js/app.mjs" defer></script>
+
+    <script type="module" src="./src/js/firebase-config.mjs"></script>
+    <script type="module" src="./src/js/app-auth.mjs"></script>
+    <script type="module" src="./src/js/app-db.mjs"></script>
+    <script type="module" src="./src/js/app.mjs"></script>
+    <script type="module" src="./src/js/app-state.mjs" defer></script>
 </head>
 
 <body class="h-full">
 
-    <div id="loadingScreen" class="loading">
-        <div class="text-2xl font-bold text-blue-600"><i class="fas fa-spinner fa-spin"></i> Yükleniyor...</div>
+    <div id="loadingScreen" class="bg-gray-900 loading">
+        <div class="text-2xl font-bold text-indigo-500 flex gap-2 items-center justify-between"><i class="fas fa-spinner fa-spin"></i> Yükleniyor...</div>
     </div>
 
     <div id="loginView" class="flex min-h-full flex-col justify-center px-6 py-12 lg:px-8">
@@ -35,7 +39,7 @@
                 <div>
                     <label for="email" class="block text-sm/6 font-medium text-gray-100">E-Posta Adresi</label>
                     <div class="mt-2">
-                        <input id="email" type="email" name="email" required autocomplete="email"
+                        <input id="email" type="email" required autocomplete="email"
                             class="block w-full rounded-md bg-white/5 px-3 py-1.5 text-base text-white outline-1 -outline-offset-1 outline-white/10 placeholder:text-gray-500 focus:outline-2 focus:-outline-offset-2 focus:outline-indigo-500 sm:text-sm/6" />
                     </div>
                 </div>
@@ -48,13 +52,13 @@
                         </div>
                     </div>
                     <div class="mt-2">
-                        <input id="password" type="password" name="password" required autocomplete="current-password"
+                        <input id="password" type="password" required autocomplete="current-password"
                             class="block w-full rounded-md bg-white/5 px-3 py-1.5 text-base text-white outline-1 -outline-offset-1 outline-white/10 placeholder:text-gray-500 focus:outline-2 focus:-outline-offset-2 focus:outline-indigo-500 sm:text-sm/6" />
                     </div>
                 </div>
 
                 <div>
-                    <button type="submit"
+                    <button id="btnSignin"
                         class="flex w-full justify-center rounded-md bg-indigo-500 px-3 py-1.5 text-sm/6 font-semibold text-white hover:bg-indigo-400 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-500">
                         Giriş Yap
                     </button>
@@ -79,38 +83,17 @@
                 </h1>
             </div>
 
-            <div class="flex justify-between items-center md:mr-4">
-                <el-dropdown class="relative">
-                    <button
-                        class="relative flex items-center gap-2 rounded-full focus:outline-none focus:ring-2 focus:ring-indigo-500 text-gray-300 hover:text-white transition-colors p-1">
-                        <span class="text-sm font-medium hidden sm:block max-w-[150px] truncate">
-                            test@gmail.com
-                        </span>
-                        <i class="fa fa-user-circle text-2xl md:text-3xl" aria-hidden="true"></i>
-                    </button>
-
-                    <el-menu anchor="bottom end" popover
-                        class="w-48 origin-top-right rounded-md bg-gray-800 py-1 shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none mt-2 z-50">
-
-                        <div
-                            class="block sm:hidden px-4 py-2 text-xs text-gray-500 border-b border-gray-700 break-words">
-                            test@gmail.com
-                        </div>
-
-                        <a href="#"
-                            class="block px-4 py-2 text-sm text-gray-300 hover:bg-gray-700 hover:text-white transition-colors">
-                            Profiliniz
-                        </a>
-                        <a href="#"
-                            class="block px-4 py-2 text-sm text-gray-300 hover:bg-gray-700 hover:text-white transition-colors">
-                            Ayarlar
-                        </a>
-                        <a href="#" id="btnLogout"
-                            class="block px-4 py-2 text-sm text-gray-300 hover:bg-gray-700 hover:text-white transition-colors">
-                            Çıkış Yap
-                        </a>
-                    </el-menu>
-                </el-dropdown>
+            <div class="flex justify-between items-center gap-2 md:mr-4">
+                <button id="btnLogout" class="bg-gray-700 text-white text-sm text-center rounded hover:bg-gray-800 px-2 py-1">
+                    <p class="text-sm">Çıkış Yap</p>
+                </button>
+                <button
+                    class="relative flex items-center gap-2 rounded-full text-gray-300 hover:text-white transition-colors p-1">
+                    <span id="adminEmailLabel" class="text-sm font-medium hidden sm:block max-w-[150px] truncate">
+                        ...
+                    </span>
+                    <i class="fa fa-user-circle text-2xl md:text-3xl" aria-hidden="true"></i>
+                </button>
             </div>
         </nav>
 
@@ -129,7 +112,7 @@
                 <div
                     class="bg-gray-900 rounded p-2 border border-solid border-gray-700 transition duration-500 ease-in-out hover:translate-y-1">
                     <h4 class="font-semibold text-sm text-gray-500 mb-2">Son Hareketler</h4>
-                    <ul id="kasaList" class="text-sm space-y-1 max-h-48 overflow-y-auto">
+                    <ul id="kasaList" class="text-sm space-y-1 h-28 overflow-y-auto">
                     </ul>
                 </div>
 
@@ -225,7 +208,9 @@
                     <table class="w-full text-left border-collapse">
                         <thead>
                             <tr class="text-sm text-gray-300">
-                                <th class="p-3"><p id="selectAll"></p></th>
+                                <th class="p-3">
+                                    <p id="selectAll"></p>
+                                </th>
                                 <th class="p-3">Daire</th>
                                 <th class="p-3">Sakin</th>
                                 <th class="p-3">Bakiye Durumu</th>
